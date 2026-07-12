@@ -23,7 +23,6 @@ jobs:
 
     - name: Generate Clean Android Architecture
       run: |
-        # මූලික ෆෝල්ඩර් ටික සකස් කිරීම
         mkdir -p app/src/main/java/com/example/schoolapp
         mkdir -p app/src/main/res/values
 
@@ -34,7 +33,7 @@ jobs:
         cat <<EOF > build.gradle
         buildscript {
             repositories { google(); mavenCentral() }
-            dependencies { classpath 'com.android.tools.build:gradle:8.2.0' }
+            dependencies { classpath 'com.android.tools.build:gradle:8.2.2' }
         }
         allprojects { repositories { google(); mavenCentral() } }
         EOF
@@ -58,7 +57,7 @@ jobs:
         }
         EOF
 
-        # 4. AndroidManifest.xml (කිසිම බාහිර ලින්ක් එකක් නැති සරලම Manifest එකක්)
+        # 4. AndroidManifest.xml
         cat <<EOF > app/src/main/AndroidManifest.xml
         <manifest xmlns:android="http://schemas.android.com/apk/res/android">
             <application android:label="School App" android:theme="@style/Theme.AppCompat.Light.NoActionBar">
@@ -75,7 +74,7 @@ jobs:
         # 5. strings.xml
         echo '<resources><string name="app_name">School App</string></resources>' > app/src/main/res/values/strings.xml
 
-        # 6. MainActivity.java (URL ලින්ක් කිසිවක් නැති, නිකන්ම Blank Screen එකක් පෙන්වන පිරිසිදු කේතය)
+        # 6. MainActivity.java
         cat <<EOF > app/src/main/java/com/example/schoolapp/MainActivity.java
         package com.example.schoolapp;
         import android.os.Bundle;
@@ -85,15 +84,19 @@ jobs:
             @Override
             protected void onCreate(Bundle savedInstanceState) {
                 super.onCreate(savedInstanceState);
-                // නිකන්ම හිස් පිටුවක් (Blank Activity) ලෝඩ් වේ
                 setContentView(new android.view.View(this));
             }
         }
         EOF
 
-    - name: Build Blank APK with System Gradle
-      run: |
-        gradle app:assembleDebug
+    # මෙන්න මේ පියවරෙන් සර්වර් එකට නිවැරදිම Gradle සංස්කරණය ස්වයංක්‍රීයවම එකතු කරනවා
+    - name: Setup Gradle
+      uses: gradle/actions/setup-gradle@v3
+      with:
+        gradle-version: 8.5
+
+    - name: Build APK with Safe Gradle
+      run: gradle app:assembleDebug
 
     - name: Upload Finished APK
       uses: actions/upload-artifact@v4
