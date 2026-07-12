@@ -21,9 +21,8 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Generate Gradle Wrapper (Since gradlew is missing)
-      run: |
-        gradle wrapper --gradle-version 8.2
+    - name: Generate Gradle Wrapper
+      run: gradle wrapper --gradle-version 8.2.2
 
     - name: Grant Execute Permission for Gradlew
       run: chmod +x gradlew
