@@ -21,26 +21,25 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Fix Directory Structure and Generate Gradle Files
+    - name: Generate Clean Android Architecture
       run: |
-        # 1. දැනට ප්‍රධාන පිටුවේ වැරදියට තියෙන app/src/main එක නියම ඇන්ඩ්‍රොයිඩ් ව්‍යුහයකට සකස් කිරීම
-        # (ඔයා හදපු AndroidManifest.xml සහ MainActivity.java මේ ෆෝල්ඩරය ඇතුළේ සුරැකිව ඇත)
+        # මූලික ෆෝල්ඩර් ටික සකස් කිරීම
+        mkdir -p app/src/main/java/com/example/schoolapp
         mkdir -p app/src/main/res/values
-        echo '<resources><string name="app_name">School App</string></resources>' > app/src/main/res/values/strings.xml
 
-        # 2. මඟහැරුණු Root Settings සාදා ගැනීම
+        # 1. settings.gradle
         echo "include ':app'" > settings.gradle
 
-        # 3. මඟහැරුණු Root build.gradle සාදා ගැනීම
+        # 2. Root build.gradle
         cat <<EOF > build.gradle
         buildscript {
             repositories { google(); mavenCentral() }
-            dependencies { classpath 'com.android.tools.build:gradle:8.2.2' }
+            dependencies { classpath 'com.android.tools.build:gradle:8.2.0' }
         }
         allprojects { repositories { google(); mavenCentral() } }
         EOF
 
-        # 4. මඟහැරුණු app/build.gradle සාදා ගැනීම
+        # 3. app/build.gradle
         cat <<EOF > app/build.gradle
         apply plugin: 'com.android.application'
         android {
@@ -59,14 +58,42 @@ jobs:
         }
         EOF
 
-    - name: Generate Gradle Wrapper
-      run: gradle wrapper --gradle-version 8.2.2
+        # 4. AndroidManifest.xml (කිසිම බාහිර ලින්ක් එකක් නැති සරලම Manifest එකක්)
+        cat <<EOF > app/src/main/AndroidManifest.xml
+        <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+            <application android:label="School App" android:theme="@style/Theme.AppCompat.Light.NoActionBar">
+                <activity android:name=".MainActivity" android:exported="true">
+                    <intent-filter>
+                        <action android:name="android.intent.action.MAIN" />
+                        <category android:name="android.intent.category.LAUNCHER" />
+                    </intent-filter>
+                </activity>
+            </application>
+        </manifest>
+        EOF
 
-    - name: Grant Execute Permission for Gradlew
-      run: chmod +x gradlew
+        # 5. strings.xml
+        echo '<resources><string name="app_name">School App</string></resources>' > app/src/main/res/values/strings.xml
 
-    - name: Build APK with Gradle Wrapper
-      run: ./gradlew assembleDebug
+        # 6. MainActivity.java (URL ලින්ක් කිසිවක් නැති, නිකන්ම Blank Screen එකක් පෙන්වන පිරිසිදු කේතය)
+        cat <<EOF > app/src/main/java/com/example/schoolapp/MainActivity.java
+        package com.example.schoolapp;
+        import android.os.Bundle;
+        import androidx.appcompat.app.AppCompatActivity;
+
+        public class MainActivity extends AppCompatActivity {
+            @Override
+            protected void onCreate(Bundle savedInstanceState) {
+                super.onCreate(savedInstanceState);
+                // නිකන්ම හිස් පිටුවක් (Blank Activity) ලෝඩ් වේ
+                setContentView(new android.view.View(this));
+            }
+        }
+        EOF
+
+    - name: Build Blank APK with System Gradle
+      run: |
+        gradle app:assembleDebug
 
     - name: Upload Finished APK
       uses: actions/upload-artifact@v4
