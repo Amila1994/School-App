@@ -21,10 +21,16 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Build APK with Gradle
+    - name: Build APK with Embedded WebView
       run: |
-        # ඇන්ඩ්‍රොයිඩ් ව්‍යාපෘතියක් සර්වර් එක තුළ ස්වයංක්‍රීයව සකස් කිරීම
+        # වෙනමම පිරිසිදු ෆෝල්ඩර් එකක් සාදා ඒ තුළට යෑම
+        mkdir android-wrapper
+        cd android-wrapper
+        
+        # Gradle ව්‍යාපෘතිය ආරම්භ කිරීම
         gradle init --type basic --dsl groovy
+        
+        # අවශ්‍ය කරන ඇන්ඩ්‍රොයිඩ් ෆෝල්ඩර් ව්‍යුහය සකස් කිරීම
         mkdir -p app/src/main/java/com/example/schoolapp
         mkdir -p app/src/main/res/layout
         mkdir -p app/src/main/res/values
@@ -60,7 +66,7 @@ jobs:
         }
         EOF
 
-        # AndroidManifest.xml
+        # AndroidManifest.xml (අන්තර්ජාල අවසර ඇතුළත් කිරීම)
         cat <<EOF > app/src/main/AndroidManifest.xml
         <manifest xmlns:android="http://schemas.android.com/apk/res/android">
             <uses-permission android:name="android.permission.INTERNET" />
@@ -77,13 +83,14 @@ jobs:
 
         # Layout & Resources
         echo '<resources><string name="app_name">School App</string></resources>' > app/src/main/res/values/strings.xml
+        
         cat <<EOF > app/src/main/res/layout/activity_main.xml
         <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent">
             <WebView android:id="@+id/webview" android:layout_width="match_parent" android:layout_height="match_parent" />
         </RelativeLayout>
         EOF
 
-        # Java MainActivity
+        # Java MainActivity (ඔයාගේ Streamlit Web URL එක මෙතැන ක්‍රියාත්මක වේ)
         cat <<EOF > app/src/main/java/com/example/schoolapp/MainActivity.java
         package com.example.schoolapp;
         import android.os.Bundle;
@@ -107,11 +114,11 @@ jobs:
         }
         EOF
 
-        # බිල්ඩ් එක සිදු කිරීම
+        # APK එක බිල්ඩ් කිරීම
         gradle app:assembleDebug
 
     - name: Upload Finished APK
       uses: actions/upload-artifact@v4
       with:
         name: School-App-APK
-        path: app/build/outputs/apk/debug/*.apk
+        path: android-wrapper/app/build/outputs/apk/debug/*.apk
