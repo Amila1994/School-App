@@ -21,13 +21,51 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
+    - name: Fix Directory Structure and Generate Gradle Files
+      run: |
+        # 1. දැනට ප්‍රධාන පිටුවේ වැරදියට තියෙන app/src/main එක නියම ඇන්ඩ්‍රොයිඩ් ව්‍යුහයකට සකස් කිරීම
+        # (ඔයා හදපු AndroidManifest.xml සහ MainActivity.java මේ ෆෝල්ඩරය ඇතුළේ සුරැකිව ඇත)
+        mkdir -p app/src/main/res/values
+        echo '<resources><string name="app_name">School App</string></resources>' > app/src/main/res/values/strings.xml
+
+        # 2. මඟහැරුණු Root Settings සාදා ගැනීම
+        echo "include ':app'" > settings.gradle
+
+        # 3. මඟහැරුණු Root build.gradle සාදා ගැනීම
+        cat <<EOF > build.gradle
+        buildscript {
+            repositories { google(); mavenCentral() }
+            dependencies { classpath 'com.android.tools.build:gradle:8.2.2' }
+        }
+        allprojects { repositories { google(); mavenCentral() } }
+        EOF
+
+        # 4. මඟහැරුණු app/build.gradle සාදා ගැනීම
+        cat <<EOF > app/build.gradle
+        apply plugin: 'com.android.application'
+        android {
+            namespace 'com.example.schoolapp'
+            compileSdk 34
+            defaultConfig {
+                applicationId "com.example.schoolapp"
+                minSdk 24
+                targetSdk 34
+                versionCode 1
+                versionName "1.0"
+            }
+        }
+        dependencies {
+            implementation 'androidx.appcompat:appcompat:1.6.1'
+        }
+        EOF
+
     - name: Generate Gradle Wrapper
       run: gradle wrapper --gradle-version 8.2.2
 
     - name: Grant Execute Permission for Gradlew
       run: chmod +x gradlew
 
-    - name: Build with Gradle Wrapper
+    - name: Build APK with Gradle Wrapper
       run: ./gradlew assembleDebug
 
     - name: Upload Finished APK
