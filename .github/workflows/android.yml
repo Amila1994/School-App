@@ -15,47 +15,118 @@ jobs:
     - name: Checkout Code
       uses: actions/checkout@v4
 
-    - name: Set up JDK 21
+    - name: Set up JDK 17
       uses: actions/setup-java@v4
       with:
-        java-version: '21'
+        java-version: '17'
         distribution: 'temurin'
-        cache: gradle
 
-    - name: Unzip Project
+    - name: Generate Android WebView Project
       run: |
-        if [ -f "School-app.zip" ]; then
-          unzip School-app.zip
-        else
-          echo "🚨 School-app.zip not found in repository!"
-          exit 1
-        fi
+        # ඇන්ඩ්‍රොයිඩ් ව්‍යාපෘති ව්‍යුහය සකස් කිරීම
+        mkdir -p app/src/main/java/com/example/schoolapp
+        mkdir -p app/src/main/res/layout
+        mkdir -p app/src/main/res/values
 
-    - name: Generate Debug Keystore
+        # build.gradle (Project)
+        cat <<EOF > build.gradle
+        buildscript {
+            repositories { google(); mavenCentral() }
+            dependencies { classpath 'com.android.tools.build:gradle:8.2.2' }
+        }
+        allprojects { repositories { google(); mavenCentral() } }
+        EOF
+
+        # settings.gradle
+        echo "include ':app'" > settings.gradle
+
+        # build.gradle (App)
+        cat <<EOF > app/build.gradle
+        plugins { id 'com.android.application' }
+        android {
+            namespace 'com.example.schoolapp'
+            compileSdk 34
+            defaultConfig {
+                applicationId "com.example.schoolapp"
+                minSdk 24
+                targetSdk 34
+                versionCode 1
+                versionName "1.0"
+            }
+            buildTypes {
+                release {
+                    minifyEnabled false
+                }
+            }
+        }
+        dependencies {
+            implementation 'androidx.appcompat:appcompat:1.6.1'
+        }
+        EOF
+
+        # AndroidManifest.xml (අන්තර්ජාල අවසර ඇතුළත් කිරීම)
+        cat <<EOF > app/src/main/AndroidManifest.xml
+        <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+            <uses-permission android:name="android.permission.INTERNET" />
+            <application
+                android:label="School App"
+                android:theme="@style/Theme.AppCompat.Light.NoActionBar">
+                <activity android:name=".MainActivity" android:exported="true">
+                    <intent-filter>
+                        <action android:name="android.intent.action.MAIN" />
+                        <category android:name="android.intent.category.LAUNCHER" />
+                    </intent-filter>
+                </activity>
+            </application>
+        </manifest>
+        EOF
+
+        # strings.xml
+        echo '<resources><string name="app_name">School App</string></resources>' > app/src/main/res/values/strings.xml
+
+        # activity_main.xml (WebView Layout එක)
+        cat <<EOF > app/src/main/res/layout/activity_main.xml
+        <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+            android:layout_width="match_width"
+            android:layout_height="match_height">
+            <WebView
+                android:id="@+id/webview"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+        </RelativeLayout>
+        EOF
+
+        # MainActivity.java (ඔයාගේ Streamlit සජීවී ලින්ක් එක මෙතැනට සම්බන්ධ වේ)
+        cat <<EOF > app/src/main/java/com/example/schoolapp/MainActivity.java
+        package com.example.schoolapp;
+        import android.os.Bundle;
+        import android.webkit.WebSettings;
+        import android.webkit.WebView;
+        import android.webkit.WebViewClient;
+        import androidx.appcompat.app.AppCompatActivity;
+
+        public class MainActivity extends AppCompatActivity {
+            @Override
+            protected void onCreate(Bundle savedInstanceState) {
+                super.onCreate(savedInstanceState);
+                setContentView(activity_main);
+                WebView webView = findViewById(R.id.webview);
+                WebSettings webSettings = webView.getSettings();
+                webSettings.setJavaScriptEnabled(true);
+                webSettings.setDomStorageEnabled(true);
+                webView.setWebViewClient(new WebViewClient());
+                // ඔයාගේ සජීවී Streamlit App ලින්ක් එක මෙතැනින් ක්‍රියාත්මක වේ
+                webView.loadUrl("https://share.streamlit.io/amila1994/school-app/main/app.py");
+            }
+        }
+        EOF
+
+    - name: Build APK with Gradle
       run: |
-        if [ ! -f "app/debug.keystore" ]; then
-          mkdir -p app
-          keytool -genkey -v -keystore app/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
-        fi
+        gradle assembleDebug
 
-    - name: Setup Gradle
-      run: |
-        if [ -f "gradlew" ]; then
-          chmod +x gradlew
-        else
-          echo "Gradlew not found, trying to run standard gradle build"
-        fi
-
-    - name: Build with Gradle
-      run: |
-        if [ -f "gradlew" ]; then
-          ./gradlew assembleDebug
-        else
-          gradle assembleDebug
-        fi
-
-    - name: Upload APK
+    - name: Upload Finished APK to GitHub
       uses: actions/upload-artifact@v4
       with:
-        name: android-app-debug-apk
+        name: School-App-Digital-APK
         path: app/build/outputs/apk/debug/*.apk
