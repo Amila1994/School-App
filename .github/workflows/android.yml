@@ -20,105 +20,16 @@ jobs:
       with:
         java-version: '17'
         distribution: 'temurin'
+        cache: gradle
 
-    - name: Build APK with Embedded WebView
-      run: |
-        # වෙනමම පිරිසිදු ෆෝල්ඩර් එකක් සාදා ඒ තුළට යෑම
-        mkdir android-wrapper
-        cd android-wrapper
-        
-        # Gradle ව්‍යාපෘතිය ආරම්භ කිරීම
-        gradle init --type basic --dsl groovy
-        
-        # අවශ්‍ය කරන ඇන්ඩ්‍රොයිඩ් ෆෝල්ඩර් ව්‍යුහය සකස් කිරීම
-        mkdir -p app/src/main/java/com/example/schoolapp
-        mkdir -p app/src/main/res/layout
-        mkdir -p app/src/main/res/values
+    - name: Grant Execute Permission for Gradlew
+      run: chmod +x gradlew
 
-        # Settings Configuration
-        echo "include ':app'" > settings.gradle
-
-        # Root build.gradle
-        cat <<EOF > build.gradle
-        buildscript {
-            repositories { google(); mavenCentral() }
-            dependencies { classpath 'com.android.tools.build:gradle:8.2.0' }
-        }
-        allprojects { repositories { google(); mavenCentral() } }
-        EOF
-
-        # App build.gradle
-        cat <<EOF > app/build.gradle
-        plugins { id 'com.android.application' }
-        android {
-            namespace 'com.example.schoolapp'
-            compileSdk 34
-            defaultConfig {
-                applicationId "com.example.schoolapp"
-                minSdk 24
-                targetSdk 34
-                versionCode 1
-                versionName "1.0"
-            }
-        }
-        dependencies {
-            implementation 'androidx.appcompat:appcompat:1.6.1'
-        }
-        EOF
-
-        # AndroidManifest.xml (අන්තර්ජාල අවසර ඇතුළත් කිරීම)
-        cat <<EOF > app/src/main/AndroidManifest.xml
-        <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-            <uses-permission android:name="android.permission.INTERNET" />
-            <application android:label="School App" android:theme="@style/Theme.AppCompat.Light.NoActionBar">
-                <activity android:name=".MainActivity" android:exported="true">
-                    <intent-filter>
-                        <action android:name="android.intent.action.MAIN" />
-                        <category android:name="android.intent.category.LAUNCHER" />
-                    </intent-filter>
-                </activity>
-            </application>
-        </manifest>
-        EOF
-
-        # Layout & Resources
-        echo '<resources><string name="app_name">School App</string></resources>' > app/src/main/res/values/strings.xml
-        
-        cat <<EOF > app/src/main/res/layout/activity_main.xml
-        <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent">
-            <WebView android:id="@+id/webview" android:layout_width="match_parent" android:layout_height="match_parent" />
-        </RelativeLayout>
-        EOF
-
-        # Java MainActivity (ඔයාගේ Streamlit Web URL එක මෙතැන ක්‍රියාත්මක වේ)
-        cat <<EOF > app/src/main/java/com/example/schoolapp/MainActivity.java
-        package com.example.schoolapp;
-        import android.os.Bundle;
-        import android.webkit.WebSettings;
-        import android.webkit.WebView;
-        import android.webkit.WebViewClient;
-        import androidx.appcompat.app.AppCompatActivity;
-
-        public class MainActivity extends AppCompatActivity {
-            @Override
-            protected void onCreate(Bundle savedInstanceState) {
-                super.onCreate(savedInstanceState);
-                setContentView(R.layout.activity_main);
-                WebView webView = findViewById(R.id.webview);
-                WebSettings webSettings = webView.getSettings();
-                webSettings.setJavaScriptEnabled(true);
-                webSettings.setDomStorageEnabled(true);
-                webView.setWebViewClient(new WebViewClient());
-                webView.loadUrl("https://share.streamlit.io/amila1994/school-app/main/app.py");
-            }
-        }
-        EOF
-
-        # APK එක බිල්ඩ් කිරීම
-        gradle app:assembleDebug
+    - name: Build with Gradle
+      run: ./gradlew assembleDebug
 
     - name: Upload Finished APK
       uses: actions/upload-artifact@v4
       with:
         name: School-App-APK
-        path: android-wrapper/app/build/outputs/apk/debug/*.apk
+        path: app/build/outputs/apk/debug/*.apk
