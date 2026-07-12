@@ -89,7 +89,6 @@ jobs:
         }
         EOF
 
-    # මෙන්න මේ පියවරෙන් සර්වර් එකට නිවැරදිම Gradle සංස්කරණය ස්වයංක්‍රීයවම එකතු කරනවා
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v3
       with:
@@ -98,8 +97,9 @@ jobs:
     - name: Build APK with Safe Gradle
       run: gradle app:assembleDebug
 
+    # මේ පියවරෙන් මුළු සර්වර් එකේම තියෙන ඕනෑම debug APK එකක් ඉබේම සොයාගනී
     - name: Upload Finished APK
       uses: actions/upload-artifact@v4
       with:
         name: School-App-APK
-        path: app/build/outputs/apk/debug/*.apk
+        path: "**/outputs/apk/debug/*.apk"
